@@ -1,0 +1,54 @@
+{{ bos_token }}
+{%- for message in messages -%}
+    {# --- Role Mapping --- #}
+    {%- if message['role'] == 'system' or message['role'] == 'tool' -%}
+        {%- set role = 'user' -%}
+    {%- elif message['role'] == 'assistant' -%}
+        {%- set role = 'model' -%}
+    {%- else -%}
+        {%- set role = message['role'] -%}
+    {%- endif -%}
+
+    {# --- Start of Turn --- #}
+    {{ '<start_of_turn>' + role + '\n' }}
+
+    {# --- Inject Tools Definition (Only in the first message) --- #}
+    {%- if loop.first -%}
+        {# 修复点1：直接使用 if tools 判断，避免 NoneType has no len 错误 #}
+        {%- if not tools -%}
+            No tools were provided. If the user requests you interact with a device, tell them you are unable to do so.
+        {%- else -%}
+            Tools:
+            {%- for tool in tools %}
+            - {{ tool['function']['name'] }}({{ tool['function']['parameters']['properties'].keys() | join(', ') }}): {{ tool['function']['description'] }}
+            {%- endfor %}
+        {%- endif -%}
+        {{ '\n\n' }}
+    {%- endif -%}
+
+    {# --- Content Rendering --- #}
+    {%- if message['role'] == 'tool' -%}
+        {{ '<tool_result>\n' + (message['content'] | trim) + '\n</tool_result>' }}
+    {%- else -%}
+        {%- if message['content'] is string -%}
+            {{ message['content'] | trim }}
+        {%- elif message['content'] is iterable -%}
+            {%- for item in message['content'] -%}
+                {%- if item['type'] == 'text' -%}
+                    {{ item['text'] | trim }}
+                {%- endif -%}
+            {%- endfor -%}
+        {%- endif -%}
+    {%- endif -%}
+
+    {# --- Tool Calls Rendering --- #}
+    {# 修复点2：直接使用 if message['tool_calls']，安全处理 null 和 [] #}
+    {%- if message['tool_calls'] -%}
+        {%- for tool_call in message["tool_calls"] -%}
+            {{ '\n<tool_call>{"name": "' + tool_call['function']['name'] + '", "arguments": ' + ('"' + tool_call['function']['arguments'] + '"' if tool_call['function']['arguments'] is string else tool_call['function']['arguments'] | tojson) + '"}</tool_call>' }}
+        {%- endfor -%}
+    {%- endif -%}
+
+    {# --- End of Turn --- #}
+    {{ '<end_of_turn>\n' }}
+{%- endfor -%}
