@@ -16,7 +16,7 @@ from jinja2 import Template
 MODEL_ID = "./google/gemma-3-1b-it" 
 DATA_FILE = "home_assistant_train_chinese.jsonl"
 # DATA_FILE = "simple.jsonl" # debug
-TEMPLATE_FILE = "tools.j2"
+TEMPLATE_FILE = "gemma3_withtools.j2"
 OUTPUT_DIR = "./gemma-ha-1b-lora"
 
 if not os.path.exists(TEMPLATE_FILE):
@@ -37,16 +37,30 @@ bnb_config = BitsAndBytesConfig(
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 tokenizer.padding_side = "right"
 
-print("正在加载模型 (4-bit)...")
+special_tokens_dict = {
+    "additional_special_tokens": [
+        "<tool_call>",
+        "</tool_call>",
+        "<tool_result>",
+        "</tool_result>"
+    ]
+}
+num_added_toks = tokenizer.add_special_tokens(special_tokens_dict)
+print(f"已添加 {num_added_toks} 个特殊 Token。")
+
+print("正在加载模型...")
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_ID,
-    quantization_config=bnb_config,
     device_map="auto",
+    torch_dtype=torch.bfloat16, 
     attn_implementation="eager"
 )
 
 model.gradient_checkpointing_enable()
 model = prepare_model_for_kbit_training(model)
+
+if num_added_toks > 0:
+    model.resize_token_embeddings(len(tokenizer))
 
 def format_with_j2(example):
     try:
@@ -100,18 +114,21 @@ peft_config = LoraConfig(
 training_args = SFTConfig(
     output_dir=OUTPUT_DIR,
     per_device_train_batch_size=1,
-    gradient_accumulation_steps=8,
+    gradient_accumulation_steps=16,
     gradient_checkpointing=True,
     gradient_checkpointing_kwargs={"use_reentrant": False},
     learning_rate=2e-4,
-    logging_steps=10,
+    logging_steps=1,
     num_train_epochs=1,
     save_strategy="steps",
     save_steps=100,
     fp16=False,
     bf16=True,
-    optim="paged_adamw_8bit",
-    max_length=1024,
+    optim="adamw_bnb_8bit",
+    lr_scheduler_type="cosine",
+    warmup_steps=0.1,
+    weight_decay=0.0,
+    max_length=4096,
     report_to="none",
     packing=False,
     dataset_text_field="text"
