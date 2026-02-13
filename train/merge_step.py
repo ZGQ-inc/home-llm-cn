@@ -4,8 +4,8 @@ import torch
 import os
 
 BASE_MODEL_ID = "./google/gemma-3-1b-it"
-LORA_DIR = "./gemma-ha-1b-lora"
-OUTPUT_DIR = "./gemma-ha-1b-merged"
+LORA_DIR = "./gemma-ha-1b-lora/checkpoint-500" 
+OUTPUT_DIR = "./gemma-ha-1b-merged-step500"
 
 print("加载基础模型...")
 base_model = AutoModelForCausalLM.from_pretrained(
