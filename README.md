@@ -15,7 +15,7 @@ Home LLM 中文版。
 git clone https://github.com/ZGQ-inc/home-llm-cn.git
 ```
 
-进入 `train` 文件夹。
+进入 train 文件夹。
 
 ## 环境配置
 
@@ -75,7 +75,7 @@ git clone https://github.com/ggml-org/llama.cpp.git
 pip install -r llama.cpp/requirements.txt
 ```
 
-如果碰到依赖问题，请使用此仓库内的文件：[./train/llama.cpp/requirements](./llama.cpp/requirements)
+如果碰到依赖问题，请使用此仓库内的文件：[./train/llama.cpp/requirements](./train/llama.cpp/requirements)
 
 安装 Ollama：https://ollama.com/download
 
@@ -111,7 +111,7 @@ ollama pull translategemma:12b
 
 原始数据集为英文，需要使用 translategemma 进行翻译。
 
-进入datasets文件夹，运行 translategemma：
+进入 datasets 文件夹，运行 translategemma：
 
 ```
 ollama run translategemma:12b
