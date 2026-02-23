@@ -37,7 +37,7 @@ python -m venv .venv
 
 安装 CUDA Toolkit：https://developer.nvidia.com/cuda/toolkit
 
-安装 Pytorch 12.8 (这里使用 12.8 版本是为了适配最新的Blackwell架构的N卡，通常 PyTorch 目前更稳定的是 12.4，如果你使用老架构，请安装 `cu124`)：
+安装 Pytorch 12.8 (这里使用 12.8 版本是为了适配最新的 Blackwell 架构的N卡，通常 PyTorch 目前更稳定的是 12.4，如果你使用老架构，请安装 `cu124`)：
 
 ```
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
@@ -121,7 +121,13 @@ Ctrl + D 退出，依次运行 提取文本、翻译和替换步骤：
 
 ```
 python pick.py
+```
+
+```
 python translate.py
+```
+
+```
 python rp.py
 ```
 
