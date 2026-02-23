@@ -14,7 +14,7 @@ from transformers import (
 from trl import SFTTrainer, SFTConfig
 from jinja2 import Template
 
-MODEL_ID = "./google/gemma-3-1b-it"
+MODEL_ID = "./gemma-3-1b-it"
 DATA_FILE = "home_assistant_train_chinese.jsonl"
 # DATA_FILE = "simple.jsonl"
 TEMPLATE_FILE = "gemma3.j2"

@@ -5,7 +5,7 @@ import json
 from peft import PeftModel
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-BASE_MODEL_ID = "./google/gemma-3-1b-it"
+BASE_MODEL_ID = "./gemma-3-1b-it"
 LORA_BASE_PATH = "./gemma-ha-1b-lora"
 
 print("正在加载基础模型和 Tokenizer...")

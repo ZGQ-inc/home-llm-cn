@@ -4,11 +4,11 @@ import shutil
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-BASE_MODEL_ID = "./google/gemma-3-1b-it"
-# LORA_DIR = "./gemma-ha-1b-lora" 
-LORA_DIR = "./gemma-ha-1b-lora/checkpoint-25" 
-# OUTPUT_DIR = "./gemma-ha-1b-merged"
-OUTPUT_DIR = "./gemma-ha-1b-merged-step25"
+BASE_MODEL_ID = "./gemma-3-1b-it"
+LORA_DIR = "./gemma-ha-1b-lora" 
+# LORA_DIR = "./gemma-ha-1b-lora/checkpoint-25" 
+OUTPUT_DIR = "./gemma-ha-1b-merged"
+# OUTPUT_DIR = "./gemma-ha-1b-merged-step25"
 
 def merge_model():
     print("正在加载基础模型...")
