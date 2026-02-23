@@ -71,7 +71,7 @@ User instruction:"""
     return full_content
 
 def run_inference(current_step, instruction="关闭客厅的灯"):
-    print(f"\n--- Step {current_step} 测试: '{instruction}' ---")
+    print(f"\nStep {current_step} 测试: '{instruction}'")
     
     full_user_content = get_formatted_prompt(instruction)
     messages = [{"role": "user", "content": full_user_content}]
@@ -97,7 +97,6 @@ def run_inference(current_step, instruction="关闭客厅的灯"):
             attention_mask=attention_mask,
             max_new_tokens=128,    
             do_sample=False,
-            # temperature=0.1,
             repetition_penalty=1.0,
             eos_token_id=[
                 tokenizer.eos_token_id, 
@@ -119,6 +118,25 @@ def run_inference(current_step, instruction="关闭客厅的灯"):
 
     print(f"Prompt:\n...{full_user_content[-100:]}")
     print(f"输出:\n{final_output}")
+
+def try_resize_vocab(target_path):
+    print("检测到词表大小不匹配，正在尝试修复...")
+    try:
+        tokenizer_lora = AutoTokenizer.from_pretrained(target_path)
+        new_vocab_size = len(tokenizer_lora)
+        current_size = base_model.config.vocab_size
+        
+        if new_vocab_size != current_size:
+            print(f"调整基础模型词表: {current_size} -> {new_vocab_size}")
+            base_model.resize_token_embeddings(new_vocab_size)
+            print("调整完成。")
+            return True
+        else:
+            print(f"Tokenizer 大小 ({new_vocab_size}) 与模型一致，无法通过 Resize 修复。")
+            return False
+    except Exception as e:
+        print(f"自动修复失败，无法加载 LoRA Tokenizer: {e}")
+        return False
 
 print("输入 Checkpoint 数字进行切换。")
 print("输入 'q' 退出。")
@@ -148,17 +166,33 @@ while True:
             try:
                 model.load_adapter(target_path, adapter_name="default")
                 model.set_adapter("default")
-            except Exception as e:
-                print(f"切换失败，尝试重新加载: {e}")
-                model = PeftModel.from_pretrained(base_model, target_path)
+            except RuntimeError as e:
+                if "size mismatch" in str(e):
+                    if try_resize_vocab(target_path):
+                        model.load_adapter(target_path, adapter_name="default")
+                        model.set_adapter("default")
+                    else:
+                        raise e
+                else:
+                    raise e
         else:
-            model = PeftModel.from_pretrained(base_model, target_path)
+            try:
+                model = PeftModel.from_pretrained(base_model, target_path)
+            except RuntimeError as e:
+                if "size mismatch" in str(e):
+                    if try_resize_vocab(target_path):
+                        model = PeftModel.from_pretrained(base_model, target_path)
+                    else:
+                        raise e
+                else:
+                    raise e
             
         run_inference(user_input, "关闭客厅的灯")
         
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        # import traceback
+        # traceback.print_exc()
         print(f"加载失败: {e}")
+        print("💡 提示：如果反复失败，请尝试重启脚本。")
 
 print("退出程序。")

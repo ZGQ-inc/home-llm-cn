@@ -1,62 +1,23 @@
 {{ bos_token }}
-{%- if not tools %}No tools were provided. If the user requests you interact with a device, tell them you are unable to do so.
-{%- else -%}
-Tools:
-{%- for tool in tools %}
-- {{ tool['function']['name'] }}({{ tool['function']['parameters']['properties'].keys() | join(', ') }}): {{ tool['function']['description'] }}
-{%- endfor -%}
-{%- endif -%}
-
 {%- for message in messages -%}
-    {# --- 角色映射 --- #}
-    {%- if (message['role'] == 'assistant') -%}
-        {%- set role = "model" -%}
-    {%- elif message['role'] == 'system' -%}
-        {%- set role = "user" -%}
-    {%- else -%}
-        {%- set role = message['role'] -%}
+    {%- if message['role'] == 'system' -%}
+        {{ '<start_of_turn>user\n' + message['content'] | trim + '<end_of_turn>\n' }}
+    {%- elif message['role'] == 'user' -%}
+        {{ '<start_of_turn>user\n' + message['content'] | trim + '<end_of_turn>\n' }}
+    {%- elif message['role'] == 'tool' -%}
+        {{ '<start_of_turn>user\n<tool_result>\n' + message['content'] | trim + '\n</tool_result><end_of_turn>\n' }}
+    {%- elif message['role'] == 'assistant' or message['role'] == 'model' -%}
+        {% generation %}
+        {{ '<start_of_turn>model\n' }}
+        {%- if message['content'] -%}
+            {{ message['content'] | trim }}
+        {%- endif -%}
+        {%- if message['tool_calls'] -%}
+            {%- for tool_call in message['tool_calls'] -%}
+                {{ '\n<tool_call>{"name": "' + tool_call['function']['name'] + '", "arguments": ' + tool_call['function']['arguments'] | string + '}</tool_call>' }}
+            {%- endfor -%}
+        {%- endif -%}
+        {{ '<end_of_turn>\n' }}
+        {% endgeneration %}
     {%- endif -%}
-
-    {{ '<start_of_turn>' + role + '\n' }}
-
-    {# --- 处理 Tool Result --- #}
-    {%- if role == "tool" -%}
-        {{ '<tool_result>' }}
-    {%- endif -%}
-
-    {# --- 文本内容处理 --- #}
-    {%- if message['content'] is string -%}
-        {{ message['content'] | trim }}
-    {%- elif message['content'] is iterable -%}
-        {%- for item in message['content'] -%}
-            {%- if item['type'] == 'image' -%}
-                {{ '
-' }}
-            {%- elif item['type'] == 'text' -%}
-                {{ item['text'] | trim }}
-            {%- endif -%}
-            {# 如果是多段内容，中间加分隔符 #}
-            {%- if not loop.last -%}
-            {{ '\n' }}
-            {%- endif -%}
-        {%- endfor -%}
-    {%- endif -%}
-
-    {%- if role == "tool" -%}
-        {{ '</tool_result>' }}
-    {%- endif -%}
-
-    {# --- 修复点：Tool Calls 处理 --- #}
-    {# 原来的写法会报 NoneType has no len，现在改为直接判断真值 #}
-    {%- if message['tool_calls'] -%}
-        {%- for tool_call in message["tool_calls"] -%}
-            {{ '\n<tool_call>{"name": "' + tool_call['function']['name'] + '", "arguments": ' + ('"' + tool_call['function']['arguments'] + '"' if tool_call['function']['arguments'] is string else tool_call['function']['arguments'] | tojson) + '"}</tool_call>' }}
-        {%- endfor %}
-    {%- endif -%}
-
-    {{ '<end_of_turn>\n' }}
 {%- endfor -%}
-
-{%- if add_generation_prompt -%}
-    {{'<start_of_turn>model\n'}}
-{%- endif -%}
